@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  door-access:
+    build: .
+    container_name: door-access
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    networks:
+      - door-network
+
+networks:
+  door-network:
+    driver: bridge
