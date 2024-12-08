@@ -6,9 +6,6 @@ services:
     container_name: door-access
     ports:
       - "8000:8000"
-    volumes:
-      - .:/app
-      - /app/node_modules
     environment:
       - NODE_ENV=production
       - MONGODB_URI=mongodb://mongodb:27017/dooraccess
