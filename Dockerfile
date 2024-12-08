@@ -4,6 +4,7 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
+COPY tsconfig.json ./
 
 # Install dependencies
 RUN npm install
@@ -11,8 +12,11 @@ RUN npm install
 # Copy application files
 COPY . .
 
+# Build TypeScript
+RUN npm run build
+
 # Expose port 8000
 EXPOSE 8000
 
 # Start the application
-CMD ["node", "server.js"]
+CMD ["npm", "start"]
