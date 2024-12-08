@@ -1,0 +1,12 @@
+{
+  "accessCodes": [
+    {
+      "code": "1234",
+      "user": "Admin",
+      "unit": "Admin",
+      "isAdmin": true
+    }
+  ],
+  "guestCodes": [],
+  "logs": []
+}
