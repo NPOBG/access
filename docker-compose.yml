@@ -9,7 +9,7 @@ services:
     environment:
       - NODE_ENV=production
       - MONGODB_URI=mongodb://mongodb:27017/dooraccess
-    restart: unless-stopped
+    restart: always
     networks:
       - door-network
     depends_on:
@@ -20,15 +20,21 @@ services:
     container_name: mongodb
     volumes:
       - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
     ports:
       - "27017:27017"
     networks:
       - door-network
-    restart: unless-stopped
+    restart: always
+    command: mongod --bind_ip 0.0.0.0
 
 volumes:
   mongodb_data:
+    name: door-access-mongodb-data
+  mongodb_config:
+    name: door-access-mongodb-config
 
 networks:
   door-network:
+    name: door-access-network
     driver: bridge
