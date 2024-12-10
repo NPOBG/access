@@ -1,18 +1,17 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import path from 'path';
 import os from 'os';
 import { AccessCode, GuestCode, Log, IAccessCode, IGuestCode } from './models';
+import { MONGODB_URI, PORT, ADMIN_USERNAME, ADMIN_PASSWORD } from './config';
 
 const app = express();
-const PORT = 8000;
 
 // Middleware
 app.use(express.json());
 app.use(express.static('.'));
 
 // Connect to MongoDB
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/dooraccess';
 mongoose.connect(MONGODB_URI)
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.error('MongoDB connection error:', err));
@@ -22,8 +21,8 @@ async function initializeAdmin() {
   const adminExists = await AccessCode.findOne({ isAdmin: true });
   if (!adminExists) {
     await AccessCode.create({
-      code: '1234',
-      user: 'Admin',
+      code: ADMIN_PASSWORD,
+      user: ADMIN_USERNAME,
       unit: 'Admin',
       isAdmin: true
     });
@@ -34,7 +33,7 @@ initializeAdmin().catch(console.error);
 // API Routes
 
 // Verify access code
-app.post('/api/verify', async (req, res) => {
+app.post('/api/verify', async (req: Request, res: Response) => {
   try {
     const { code } = req.body;
     const accessCode = await AccessCode.findOne({ code });
@@ -67,7 +66,7 @@ app.post('/api/verify', async (req, res) => {
 });
 
 // Create a new guest code
-app.post('/api/guest-codes', async (req, res) => {
+app.post('/api/guest-codes', async (req: Request, res: Response) => {
   try {
     const code = String(Math.floor(100000 + Math.random() * 900000));
     const guestCode = await GuestCode.create({
@@ -85,7 +84,7 @@ app.post('/api/guest-codes', async (req, res) => {
 });
 
 // Get access codes (admin only)
-app.get('/api/access-codes', async (req, res) => {
+app.get('/api/access-codes', async (req: Request, res: Response) => {
   try {
     const accessCodes = await AccessCode.find().lean();
     res.json(accessCodes);
@@ -96,7 +95,7 @@ app.get('/api/access-codes', async (req, res) => {
 });
 
 // Add access code (admin only)
-app.post('/api/access-codes', async (req, res) => {
+app.post('/api/access-codes', async (req: Request, res: Response) => {
   try {
     const { code, user, unit, isAdmin } = req.body;
     const newAccessCode = await AccessCode.create({ code, user, unit, isAdmin });
@@ -108,7 +107,7 @@ app.post('/api/access-codes', async (req, res) => {
 });
 
 // Remove access code (admin only)
-app.delete('/api/access-codes/:code', async (req, res) => {
+app.delete('/api/access-codes/:code', async (req: Request, res: Response) => {
   try {
     const result = await AccessCode.findOneAndDelete({ code: req.params.code });
     if (result) {
@@ -123,7 +122,7 @@ app.delete('/api/access-codes/:code', async (req, res) => {
 });
 
 // Get access logs (admin only)
-app.get('/api/logs', async (req, res) => {
+app.get('/api/logs', async (req: Request, res: Response) => {
   try {
     const logs = await Log.find().sort({ timestamp: -1 }).lean();
     res.json(logs);
@@ -134,7 +133,7 @@ app.get('/api/logs', async (req, res) => {
 });
 
 // Get guest codes (admin only)
-app.get('/api/guest-codes', async (req, res) => {
+app.get('/api/guest-codes', async (req: Request, res: Response) => {
   try {
     const guestCodes = await GuestCode.find().lean();
     res.json(guestCodes);
