@@ -8,5 +8,20 @@
     }
   ],
   "guestCodes": [],
-  "logs": []
+  "logs": [
+    {
+      "timestamp": "2024-12-09T14:49:16.781Z",
+      "code": "1234",
+      "user": "Admin",
+      "unit": "Admin",
+      "success": true
+    },
+    {
+      "timestamp": "2024-12-09T14:49:25.713Z",
+      "code": "1234",
+      "user": "Admin",
+      "unit": "Admin",
+      "success": true
+    }
+  ]
 }
