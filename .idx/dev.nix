@@ -6,6 +6,7 @@
   # Use https://search.nixos.org/packages to find packages
   packages = [
     pkgs.nodejs_20
+    pkgs.docker
     pkgs.docker-compose
     pkgs.nodePackages.nodemon
   ];

@@ -8,5 +8,69 @@
     }
   ],
   "guestCodes": [],
-  "logs": []
+  "logs": [
+    {
+      "timestamp": "2024-12-09T14:49:16.781Z",
+      "code": "1234",
+      "user": "Admin",
+      "unit": "Admin",
+      "success": true
+    },
+    {
+      "timestamp": "2024-12-09T14:49:25.713Z",
+      "code": "1234",
+      "user": "Admin",
+      "unit": "Admin",
+      "success": true
+    },
+    {
+      "timestamp": "2024-12-10T11:14:17.258Z",
+      "code": "1234",
+      "user": "Admin",
+      "unit": "Admin",
+      "success": true
+    },
+    {
+      "timestamp": "2024-12-10T11:14:24.682Z",
+      "code": "1234",
+      "user": "Admin",
+      "unit": "Admin",
+      "success": true
+    },
+    {
+      "timestamp": "2024-12-10T11:14:34.366Z",
+      "code": "1234",
+      "user": "Admin",
+      "unit": "Admin",
+      "success": true
+    },
+    {
+      "timestamp": "2024-12-10T13:54:39.093Z",
+      "code": "1234",
+      "user": "Admin",
+      "unit": "Admin",
+      "success": true
+    },
+    {
+      "timestamp": "2024-12-10T13:54:50.178Z",
+      "code": "1234",
+      "user": "Admin",
+      "unit": "Admin",
+      "success": true
+    },
+    {
+      "timestamp": "2024-12-10T13:55:10.644Z",
+      "code": "1234",
+      "user": "Admin",
+      "unit": "Admin",
+      "success": true
+    },
+    {
+      "timestamp": "2024-12-10T13:55:28.917Z",
+      "code": "1234",
+      "user": "Admin",
+      "unit": "Admin",
+      "success": true
+    }
+  ]
 }
