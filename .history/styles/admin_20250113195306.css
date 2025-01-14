@@ -198,22 +198,10 @@ select {
     border-radius: var(--border-radius);
     border: 1px solid rgba(255, 255, 255, 0.1);
     background: rgba(255, 255, 255, 0.05);
-    color: var(--text-color); /* Match other form fields */
+    color: #111; /* Darker color for better contrast against white */
     font-size: 1rem;
     transition: all 0.3s ease;
     cursor: pointer;
-}
-
-/* Style for dropdown options */
-select option {
-    color: #333; /* Keep original color for options */
-    background: white;
-}
-
-/* Style for selected option */
-select option:checked {
-    color: var(--text-color);
-    background: rgba(255, 255, 255, 0.1);
 }
 
 select:focus {

@@ -66,9 +66,9 @@ app.post('/api/verify', async (req: Request, res: Response) => {
       });
     }
 
-    // Validate code format (4-6 digits)
-    if (!code || typeof code !== 'string' || code.length < 4 || code.length > 6 || !/^\d+$/.test(code)) {
-      return res.status(401).json({ error: 'Invalid code format - must be 4 to 6 digits' });
+    // Validate code format
+    if (!code || typeof code !== 'string' || code.length !== 6 || !/^\d+$/.test(code)) {
+      return res.status(401).json({ error: 'Invalid code format' });
     }
 
     // Check for valid access code

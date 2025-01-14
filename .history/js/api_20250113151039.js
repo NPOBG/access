@@ -6,22 +6,12 @@ class DoorAPI {
 
     // Helper method for API calls
     async fetchAPI(endpoint, options = {}) {
-        const headers = {
-            'Content-Type': 'application/json',
-            ...options.headers
-        };
-        
-        // Add admin session token if available
-        const adminSession = sessionStorage.getItem('adminSession');
-        if (adminSession) {
-            const sessionData = JSON.parse(adminSession);
-            headers['X-Admin-Session'] = sessionData.code;
-            headers['X-Admin-Timestamp'] = sessionData.timestamp;
-        }
-
         const response = await fetch(`${this.apiBaseUrl}/api/${endpoint}`, {
             ...options,
-            headers
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
         });
 
         if (!response.ok) {
@@ -34,30 +24,12 @@ class DoorAPI {
     // Verify access code
     async verifyCode(code) {
         try {
-            // Get current session data
-            const session = JSON.parse(sessionStorage.getItem('currentSession') || '{}');
-            
             const result = await this.fetchAPI('verify', {
                 method: 'POST',
-                body: JSON.stringify({ code }),
-                headers: {
-                    'X-Session-Id': session.id || '',
-                    'X-Session-Timestamp': session.timestamp || Date.now()
-                }
+                body: JSON.stringify({ code })
             });
-            
-            // Update session storage with new session data
-            if (result.session) {
-                sessionStorage.setItem('currentSession', JSON.stringify(result.session));
-            }
-            
             return result;
         } catch (error) {
-            if (error.message.includes('401')) {
-                console.error('Authentication failed - please try again');
-                sessionStorage.removeItem('currentSession');
-                throw new Error('Authentication failed');
-            }
             console.error('Verification error:', error);
             throw error;
         }
@@ -77,20 +49,11 @@ class DoorAPI {
     }
 
     // Add new access code (admin only)
-    async addAccessCode(codeData) {
+    async addAccessCode(code, user, unit, isAdmin = false) {
         try {
             await this.fetchAPI('access-codes', {
                 method: 'POST',
-                body: JSON.stringify({
-                    code: codeData.code,
-                    name: codeData.name,
-                    type: codeData.type,
-                    activation: codeData.activation,
-                    deactivation: codeData.deactivation,
-                    createdBy: codeData.createdBy,
-                    createdOn: codeData.createdOn,
-                    isAdmin: codeData.type === 'Admin'
-                })
+                body: JSON.stringify({ code, user, unit, isAdmin })
             });
         } catch (error) {
             console.error('Add access code error:', error);
@@ -124,11 +87,25 @@ class DoorAPI {
     async getAccessCodes() {
         try {
             const response = await this.fetchAPI('access-codes');
-            if (!Array.isArray(response)) {
-                console.error('Invalid access codes response:', response);
-                return [];
+            console.log('Access codes API response:', response);
+            
+            // Handle different response formats
+            if (Array.isArray(response)) {
+                return response;
             }
-            return response;
+            
+            // If response is an object with a data property
+            if (response && Array.isArray(response.data)) {
+                return response.data;
+            }
+            
+            // If response is an object with a codes property
+            if (response && Array.isArray(response.codes)) {
+                return response.codes;
+            }
+            
+            console.warn('Access codes response format not recognized:', response);
+            return [];
         } catch (error) {
             console.error('Get access codes error:', error);
             return [];

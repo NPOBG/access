@@ -211,42 +211,37 @@ class Keypad {
                     setTimeout(() => this.resetMode(), 2000);
                 }
             } else if (this.isAdminMode) {
-                // Verify admin code before storing session
-                try {
-                    const verified = await window.doorAPI.verifyCode(this.currentCode);
-                    if (verified && verified.isAdmin) {
-                        // Store admin session with expiration and additional validation data
-                        const sessionData = {
-                            code: this.currentCode,
-                            user: verified.user || 'Admin',
-                            timestamp: new Date().getTime(),
-                            expires: new Date().getTime() + (8 * 60 * 60 * 1000), // 8 hours
-                            type: 'Admin',
-                            isAdmin: true
-                        };
-                        sessionStorage.setItem('adminSession', JSON.stringify(sessionData));
-                        sessionStorage.setItem('adminUser', sessionData.user);
-                        sessionStorage.setItem('adminCode', sessionData.code);
-                        
-                        this.showStatus('Access granted', 'success');
-                        this.provideSuccessFeedback();
-                        setTimeout(() => {
-                            window.location.href = 'admin.html';
-                        }, 1000);
-                    } else {
-                        throw new Error('Invalid admin code');
+                if (accessCode && accessCode.isAdmin) {
+                    this.showStatus('Access granted', 'success');
+                    this.provideSuccessFeedback();
+                    // Store admin session with expiration
+                    const sessionData = {
+                        code: this.currentCode,
+                        timestamp: new Date().getTime(),
+                        expires: new Date().getTime() + (8 * 60 * 60 * 1000), // 8 hours
+                        isAdmin: true
+                    };
+                    sessionStorage.setItem('adminSession', JSON.stringify(sessionData));
+                    
+                    // Verify session before redirect
+                    try {
+                        const verified = await window.doorAPI.verifyCode(this.currentCode);
+                        if (verified && verified.isAdmin) {
+                            setTimeout(() => {
+                                window.location.href = 'admin.html';
+                            }, 1000);
+                        } else {
+                            throw new Error('Admin verification failed');
+                        }
+                    } catch (error) {
+                        this.showStatus('Session verification failed', 'error');
+                        this.provideErrorFeedback();
+                        this.resetMode();
                     }
-                } catch (error) {
-                    if (error.message.includes('Access denied')) {
-                        this.showStatus('Access denied: No permissions', 'error');
-                    } else if (error.message.includes('Invalid')) {
-                        this.showStatus('Invalid admin code', 'error');
-                    } else {
-                        this.showStatus('System error', 'error');
-                    }
+                } else {
+                    this.showStatus('Invalid admin code', 'error');
                     this.provideErrorFeedback();
-                    sessionStorage.removeItem('adminSession');
-                    this.resetMode();
+                    setTimeout(() => this.resetMode(), 2000);
                 }
             } else {
                 this.showStatus('Verifying...', 'processing');

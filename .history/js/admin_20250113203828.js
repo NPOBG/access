@@ -240,7 +240,7 @@ class AdminPanel {
             const currentUser = sessionStorage.getItem('adminUser') || 'Guest';
             
             // Filter codes based on user type
-            const userCode = allCodes.find(code => code.user === currentUser);
+            const userCode = allCodes.find(code => code.name === currentUser);
             let codes = [];
             
             if (userCode) {
@@ -431,48 +431,7 @@ class AdminPanel {
         this.setLoading(this.logsContainer, 'Loading access logs...');
         
         try {
-            const allLogs = await window.doorAPI.getLogs();
-            const currentUser = sessionStorage.getItem('adminUser') || 'Guest';
-            
-            // Filter logs based on user type
-            const userCode = await window.doorAPI.getAccessCodes()
-                .then(codes => codes.find(code => code.user === currentUser));
-                
-            let logs = [];
-            
-            if (userCode) {
-                switch(userCode.type) {
-                    case 'Resident':
-                        // Residents can see their own logs and their guests
-                        logs = allLogs.filter(log => 
-                            log.user === currentUser ||
-                            allLogs.some(code => 
-                                code.user === log.user && 
-                                code.createdBy === currentUser
-                            )
-                        );
-                        break;
-                        
-                    case 'Host':
-                        // Hosts can see their own logs, their residents, and guests
-                        logs = allLogs.filter(log => 
-                            log.user === currentUser ||
-                            allLogs.some(code => 
-                                (code.type === 'Resident' || code.type === 'Guest') &&
-                                code.createdBy === currentUser
-                            )
-                        );
-                        break;
-                        
-                    case 'Admin':
-                        // Admins see all logs
-                        logs = allLogs;
-                        break;
-                        
-                    default:
-                        logs = [];
-                }
-            }
+            const logs = await window.doorAPI.getLogs();
             
             if (logs.length === 0) {
                 this.logsList.innerHTML = `
@@ -509,17 +468,57 @@ class AdminPanel {
 
 // Initialize admin panel when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        const code = prompt("Enter admin code:");
-        if (code === "1234") {
-            window.adminPanel = new AdminPanel();
-        } else {
-            alert("Access denied");
-            window.location.href = 'index.html';
+    console.log('DOM fully loaded and parsed');
+    
+    // Check user access based on type
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromKeypad = urlParams.get('fromKeypad');
+    const currentUser = sessionStorage.getItem('adminUser') || 'Guest';
+    
+    if (!fromKeypad) {
+        try {
+            const codes = await window.doorAPI.getAccessCodes();
+            const userCode = codes.find(code => code.name === currentUser);
+            
+            if (!userCode) {
+                alert('Access denied. No access code found for current user.');
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            // Check permissions based on type
+            switch(userCode.type) {
+                case 'Guest':
+                    alert('Access denied. Guests cannot access admin panel.');
+                    window.location.href = 'index.html';
+                    return;
+                    
+                case 'Resident':
+                    // Residents can only manage their own codes and view their logs
+                    document.getElementById('addCodeBtn').style.display = 'none';
+                    break;
+                    
+                case 'Host':
+                    // Hosts can manage their residents and guests
+                    break;
+                    
+                case 'Admin':
+                    // Admins have full access
+                    break;
+                    
+                default:
+                    alert('Access denied. Invalid user type.');
+                    window.location.href = 'index.html';
+                    return;
+            }
+        } catch (error) {
+            console.error('Error checking access:', error);
+            alert('Error checking access. Please try again.');
+            return;
         }
-    } catch (error) {
-        console.error('Admin panel initialization error:', error);
-        alert('Failed to initialize admin panel. Please try again.');
-        window.location.href = 'index.html';
     }
+
+    console.log('Initializing AdminPanel...');
+    window.adminPanel = new AdminPanel();
+    console.log('AdminPanel initialized:', window.adminPanel);
 });

@@ -10,8 +10,8 @@
     <script>
         // Security check - prevent direct URL access
         function checkAdminAccess() {
-            const adminSession = sessionStorage.getItem('adminSession');
-            if (!adminSession) {
+            const adminAccess = sessionStorage.getItem('adminAccess');
+            if (!adminAccess) {
                 alert('Unauthorized access. Please use admin code at keypad.');
                 window.location.href = 'index.html';
             }
@@ -39,7 +39,7 @@
             <nav role="navigation" aria-label="Main">
                 <a href="index.html" 
                    class="back-link" 
-                   onclick="sessionStorage.removeItem('adminSession')"
+                   onclick="sessionStorage.removeItem('adminAccess')"
                    aria-label="Return to keypad">
                     Back to Keypad
                 </a>
@@ -98,79 +98,69 @@
             <div class="modal-content">
                 <h2 id="modal-title">Add New Access Code</h2>
                 <form id="addCodeForm" role="form" aria-labelledby="modal-title">
-                    <div class="form-grid">
-                        <!-- Code and Name in first row -->
-                        <div class="form-group">
-                            <label for="code">Code (4-6 digits):</label>
-                            <input type="text" 
-                                   id="code" 
-                                   required 
-                                   pattern="[0-9]{4,6}" 
-                                   maxlength="6" 
-                                   title="Enter 4 to 6 digits"
-                                   aria-describedby="code-help"
-                                   autocomplete="off">
-                            <small id="code-help" class="help-text">Enter 4-6 digit code</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="name">Name:</label>
-                            <input type="text" 
-                                   id="name" 
-                                   required 
-                                   value="Guest"
-                                   aria-describedby="name-help">
-                            <small id="name-help" class="help-text">Code owner's name</small>
-                        </div>
-
-                        <!-- Type in second row -->
-                        <div class="form-group full-width">
-                            <label for="type">Type:</label>
-                            <select id="type" 
-                                    required 
-                                    aria-describedby="type-help">
-                                <option value="Admin">Admin</option>
-                                <option value="Host">Host</option>
-                                <option value="Resident">Resident</option>
-                                <option value="Guest" selected>Guest</option>
-                            </select>
-                            <small id="type-help" class="help-text">Access level and expiration rules</small>
-                        </div>
-
-                        <!-- Dates in third row -->
-                        <div class="form-group">
-                            <label for="activation">Activation:</label>
-                            <input type="datetime-local" 
-                                   id="activation" 
-                                   required 
-                                   aria-describedby="activation-help">
-                            <small id="activation-help" class="help-text">When code becomes active</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="deactivation">Deactivation:</label>
-                            <input type="datetime-local" 
-                                   id="deactivation"
-                                   aria-describedby="deactivation-help">
-                            <small id="deactivation-help" class="help-text">When code expires</small>
-                        </div>
-
-                        <!-- Created info in fourth row -->
-                        <div class="form-group">
-                            <label for="createdBy">Created by:</label>
-                            <input type="text" 
-                                   id="createdBy" 
-                                   readonly 
-                                   aria-label="Administrator creating this code">
-                        </div>
-                        <div class="form-group">
-                            <label for="createdOn">Created on:</label>
-                            <input type="text" 
-                                   id="createdOn" 
-                                   readonly 
-                                   aria-label="Creation date and time">
-                        </div>
+                    <div class="form-group">
+                        <label for="code">Code (4-6 digits):</label>
+                        <input type="text" 
+                               id="code" 
+                               required 
+                               pattern="[0-9]{4,6}" 
+                               maxlength="6" 
+                               title="Enter 4 to 6 digits"
+                               aria-describedby="code-help"
+                               autocomplete="off">
+                        <small id="code-help" class="help-text">Enter a unique numeric code between 4 and 6 digits</small>
                     </div>
-
-                    <!-- Fixed footer with actions -->
+                    <div class="form-group">
+                        <label for="name">Name:</label>
+                        <input type="text" 
+                               id="name" 
+                               required 
+                               value="Visitor"
+                               aria-describedby="name-help">
+                        <small id="name-help" class="help-text">Name of the person who will use this code</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="createdBy">Created by:</label>
+                        <input type="text" 
+                               id="createdBy" 
+                               readonly 
+                               aria-label="Administrator creating this code">
+                    </div>
+                    <div class="form-group">
+                        <label for="createdOn">Created on:</label>
+                        <input type="text" 
+                               id="createdOn" 
+                               readonly 
+                               aria-label="Creation date and time">
+                    </div>
+                    <div class="form-group">
+                        <label for="type">Type:</label>
+                        <select id="type" 
+                                required 
+                                aria-describedby="type-help">
+                            <option value="Admin">Admin</option>
+                            <option value="Host">Host</option>
+                            <option value="Resident">Resident</option>
+                            <option value="Guest">Guest</option>
+                            <option value="Visitor" selected>Visitor</option>
+                        </select>
+                        <small id="type-help" class="help-text">Access level determines code permissions and default expiration</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="activation">Activation:</label>
+                        <input type="datetime-local" 
+                               id="activation" 
+                               required 
+                               aria-describedby="activation-help">
+                        <small id="activation-help" class="help-text">When this code becomes active (defaults to current time)</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="deactivation">Deactivation:</label>
+                        <input type="datetime-local" 
+                               id="deactivation"
+                               aria-describedby="deactivation-help">
+                        <small id="deactivation-help" class="help-text">When this code expires (leave empty for one-time use)</small>
+                    </div>
                     <div class="form-actions">
                         <button type="button" 
                                 class="cancel-button" 

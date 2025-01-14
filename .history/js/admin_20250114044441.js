@@ -75,7 +75,7 @@ class AdminPanel {
 
     openModal() {
         // Set default values
-        const now = new Date();
+        simplify and reverse all additional stepsconst now = new Date();
         const defaultTime = '14:00';
         
         // Set activation to current date with default time
@@ -510,13 +510,17 @@ class AdminPanel {
 // Initialize admin panel when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        const code = prompt("Enter admin code:");
-        if (code === "1234") {
-            window.adminPanel = new AdminPanel();
-        } else {
-            alert("Access denied");
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        
+        // Only check for valid admin code
+        if (code !== '1234') {
+            alert('Invalid admin code');
             window.location.href = 'index.html';
+            return;
         }
+
+        window.adminPanel = new AdminPanel();
     } catch (error) {
         console.error('Admin panel initialization error:', error);
         alert('Failed to initialize admin panel. Please try again.');

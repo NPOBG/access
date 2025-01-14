@@ -83,11 +83,9 @@ class AdminPanel {
         const [hours, minutes] = defaultTime.split(':');
         activationDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
         
-        // Format for datetime-local input in user's timezone
+        // Format for datetime-local input
         const formatDateTime = (date) => {
-            const offset = date.getTimezoneOffset() * 60000;
-            const localDate = new Date(date.getTime() - offset);
-            return localDate.toISOString().slice(0, 16); // Format: YYYY-MM-DDThh:mm
+            return date.toISOString().slice(0, 16); // Format: YYYY-MM-DDThh:mm
         };
 
         // Set form defaults
@@ -123,8 +121,6 @@ class AdminPanel {
         // Add listener for activation changes
         document.getElementById('activation').addEventListener('change', setDeactivationDate);
 
-        // Show required fields message
-        this.showStatus('Required fields: Code (4-6 digits), Name, Type, Activation Date', 'info', 5000);
         this.modal.classList.add('active');
     }
 
@@ -184,9 +180,7 @@ class AdminPanel {
                 activation: activation.toISOString(),
                 deactivation: deactivation ? deactivation.toISOString() : null,
                 createdBy,
-                createdOn: createdOn.toISOString(),
-                isAdmin: type === 'Admin',
-                isActive: true
+                createdOn: createdOn.toISOString()
             });
 
             // Show success message
@@ -236,41 +230,7 @@ class AdminPanel {
         this.setLoading(this.codesContainer, 'Loading access codes...');
         
         try {
-            const allCodes = await window.doorAPI.getAccessCodes();
-            const currentUser = sessionStorage.getItem('adminUser') || 'Guest';
-            
-            // Filter codes based on user type
-            const userCode = allCodes.find(code => code.user === currentUser);
-            let codes = [];
-            
-            if (userCode) {
-                switch(userCode.type) {
-                    case 'Resident':
-                        // Residents can see their own codes and their guests
-                        codes = allCodes.filter(code => 
-                            code.createdBy === currentUser || 
-                            code.type === 'Guest'
-                        );
-                        break;
-                        
-                    case 'Host':
-                        // Hosts can see their own codes, their residents, and guests
-                        codes = allCodes.filter(code => 
-                            code.createdBy === currentUser ||
-                            code.type === 'Resident' ||
-                            code.type === 'Guest'
-                        );
-                        break;
-                        
-                    case 'Admin':
-                        // Admins see all codes
-                        codes = allCodes;
-                        break;
-                        
-                    default:
-                        codes = [];
-                }
-            }
+            const codes = await window.doorAPI.getAccessCodes();
             
             if (codes.length === 0) {
                 this.codesList.innerHTML = `
@@ -431,48 +391,7 @@ class AdminPanel {
         this.setLoading(this.logsContainer, 'Loading access logs...');
         
         try {
-            const allLogs = await window.doorAPI.getLogs();
-            const currentUser = sessionStorage.getItem('adminUser') || 'Guest';
-            
-            // Filter logs based on user type
-            const userCode = await window.doorAPI.getAccessCodes()
-                .then(codes => codes.find(code => code.user === currentUser));
-                
-            let logs = [];
-            
-            if (userCode) {
-                switch(userCode.type) {
-                    case 'Resident':
-                        // Residents can see their own logs and their guests
-                        logs = allLogs.filter(log => 
-                            log.user === currentUser ||
-                            allLogs.some(code => 
-                                code.user === log.user && 
-                                code.createdBy === currentUser
-                            )
-                        );
-                        break;
-                        
-                    case 'Host':
-                        // Hosts can see their own logs, their residents, and guests
-                        logs = allLogs.filter(log => 
-                            log.user === currentUser ||
-                            allLogs.some(code => 
-                                (code.type === 'Resident' || code.type === 'Guest') &&
-                                code.createdBy === currentUser
-                            )
-                        );
-                        break;
-                        
-                    case 'Admin':
-                        // Admins see all logs
-                        logs = allLogs;
-                        break;
-                        
-                    default:
-                        logs = [];
-                }
-            }
+            const logs = await window.doorAPI.getLogs();
             
             if (logs.length === 0) {
                 this.logsList.innerHTML = `
@@ -509,17 +428,30 @@ class AdminPanel {
 
 // Initialize admin panel when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        const code = prompt("Enter admin code:");
-        if (code === "1234") {
-            window.adminPanel = new AdminPanel();
-        } else {
-            alert("Access denied");
-            window.location.href = 'index.html';
+    console.log('DOM fully loaded and parsed');
+    
+    // Check if user has admin access
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromKeypad = urlParams.get('fromKeypad');
+    
+    if (!fromKeypad) {
+        try {
+            const codes = await window.doorAPI.getAccessCodes();
+            const hasAdminCode = codes.some(code => code.isAdmin);
+            
+            if (!hasAdminCode) {
+                alert('Access denied. Please use admin code at keypad.');
+                window.location.href = 'index.html';
+                return;
+            }
+        } catch (error) {
+            console.error('Error checking admin access:', error);
+            alert('Error checking admin access. Please try again.');
+            return;
         }
-    } catch (error) {
-        console.error('Admin panel initialization error:', error);
-        alert('Failed to initialize admin panel. Please try again.');
-        window.location.href = 'index.html';
     }
+
+    console.log('Initializing AdminPanel...');
+    window.adminPanel = new AdminPanel();
+    console.log('AdminPanel initialized:', window.adminPanel);
 });

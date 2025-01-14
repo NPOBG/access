@@ -189,66 +189,40 @@ class Keypad {
 
         this.clearSubmitTimeout();
         this.isProcessing = true;
+        const accessCode = window.doorAPI.verifyCode(this.currentCode);
         
-        try {
-            const accessCode = await window.doorAPI.verifyCode(this.currentCode);
-
-            if (this.isGuestMode) {
-                if (accessCode && accessCode.isAdmin) {
-                    const guestCode = await window.doorAPI.createGuestCode();
-                    const modal = document.getElementById('guestCodeModal');
-                    const codeDisplay = document.getElementById('guestCode');
-                    
-                    this.showStatus('Guest code generated', 'success');
-                    this.provideSuccessFeedback();
-                    
-                    codeDisplay.textContent = guestCode;
-                    modal.classList.add('active');
-                    this.resetMode();
-                } else {
-                    this.showStatus('Invalid admin code', 'error');
-                    this.provideErrorFeedback();
-                    setTimeout(() => this.resetMode(), 2000);
-                }
-            } else if (this.isAdminMode) {
-                // Verify admin code before storing session
-                try {
-                    const verified = await window.doorAPI.verifyCode(this.currentCode);
-                    if (verified && verified.isAdmin) {
-                        // Store admin session with expiration and additional validation data
-                        const sessionData = {
-                            code: this.currentCode,
-                            user: verified.user || 'Admin',
-                            timestamp: new Date().getTime(),
-                            expires: new Date().getTime() + (8 * 60 * 60 * 1000), // 8 hours
-                            type: 'Admin',
-                            isAdmin: true
-                        };
-                        sessionStorage.setItem('adminSession', JSON.stringify(sessionData));
-                        sessionStorage.setItem('adminUser', sessionData.user);
-                        sessionStorage.setItem('adminCode', sessionData.code);
-                        
-                        this.showStatus('Access granted', 'success');
-                        this.provideSuccessFeedback();
-                        setTimeout(() => {
-                            window.location.href = 'admin.html';
-                        }, 1000);
-                    } else {
-                        throw new Error('Invalid admin code');
-                    }
-                } catch (error) {
-                    if (error.message.includes('Access denied')) {
-                        this.showStatus('Access denied: No permissions', 'error');
-                    } else if (error.message.includes('Invalid')) {
-                        this.showStatus('Invalid admin code', 'error');
-                    } else {
-                        this.showStatus('System error', 'error');
-                    }
-                    this.provideErrorFeedback();
-                    sessionStorage.removeItem('adminSession');
-                    this.resetMode();
-                }
+        if (this.isGuestMode) {
+            if (accessCode && accessCode.isAdmin) {
+                const guestCode = window.doorAPI.createGuestCode();
+                const modal = document.getElementById('guestCodeModal');
+                const codeDisplay = document.getElementById('guestCode');
+                
+                this.showStatus('Guest code generated', 'success');
+                this.provideSuccessFeedback();
+                
+                codeDisplay.textContent = guestCode;
+                modal.classList.add('active');
+                this.resetMode();
             } else {
+                this.showStatus('Invalid admin code', 'error');
+                this.provideErrorFeedback();
+                setTimeout(() => this.resetMode(), 2000);
+            }
+        } else if (this.isAdminMode) {
+            if (accessCode && accessCode.isAdmin) {
+                this.showStatus('Access granted', 'success');
+                this.provideSuccessFeedback();
+                sessionStorage.setItem('adminAccess', 'true');
+                setTimeout(() => {
+                    window.location.href = 'admin.html';
+                }, 1000);
+            } else {
+                this.showStatus('Invalid admin code', 'error');
+                this.provideErrorFeedback();
+                setTimeout(() => this.resetMode(), 2000);
+            }
+        } else {
+            if (accessCode) {
                 this.showStatus('Verifying...', 'processing');
                 try {
                     const success = await window.doorAPI.toggleDoor();
@@ -263,10 +237,10 @@ class Keypad {
                     this.showStatus('System error', 'error');
                     this.provideErrorFeedback();
                 }
+            } else {
+                this.showStatus('Invalid code', 'error');
+                this.provideErrorFeedback();
             }
-        } catch (error) {
-            this.showStatus('Invalid code', 'error');
-            this.provideErrorFeedback();
         }
 
         this.currentCode = '';

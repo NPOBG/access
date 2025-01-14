@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Door Access - Admin Panel</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/admin.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <script>
+        // Security check - prevent direct URL access
+        function checkAdminAccess() {
+            const adminAccess = sessionStorage.getItem('adminAccess');
+            if (!adminAccess) {
+                alert('Unauthorized access. Please use admin code at keypad.');
+                window.location.href = 'index.html';
+            }
+        }
+        checkAdminAccess();
+    </script>
+</head>
+<body>
+    <div class="admin-container" role="application" aria-label="Door Access Admin Panel">
+        <header role="banner">
+            <h1>Admin Panel</h1>
+            <nav role="navigation" aria-label="Main">
+                <a href="index.html" 
+                   class="back-link" 
+                   onclick="sessionStorage.removeItem('adminAccess')"
+                   aria-label="Return to keypad">
+                    Back to Keypad
+                </a>
+            </nav>
+        </header>
+
+        <main class="admin-content" role="main">
+            <section class="section" aria-labelledby="codes-heading">
+                <h2 id="codes-heading">Access Codes</h2>
+                <button id="addCodeBtn" 
+                        class="action-button"
+                        aria-haspopup="dialog"
+                        aria-controls="addCodeModal">
+                    Add New Code
+                </button>
+                <div class="codes-list" 
+                     id="codesList"
+                     role="list"
+                     aria-label="List of access codes">
+                    <!-- Codes will be populated here -->
+                </div>
+            </section>
+
+            <section class="section" aria-labelledby="logs-heading">
+                <h2 id="logs-heading">Access Logs</h2>
+                <div class="logs-list" 
+                     id="logsList"
+                     role="list"
+                     aria-label="Access history logs">
+                    <!-- Logs will be populated here -->
+                </div>
+            </section>
+        </main>
+
+        <!-- Add Code Modal -->
+        <div id="addCodeModal" 
+             class="modal" 
+             role="dialog"
+             aria-modal="true"
+             aria-hidden="true"
+             aria-labelledby="modal-title">
+            <div class="modal-content">
+                <h2 id="modal-title">Add New Access Code</h2>
+                <form id="addCodeForm" role="form" aria-labelledby="modal-title">
+                    <div class="form-group">
+                        <label for="code">Code (4-6 digits):</label>
+                        <input type="text" 
+                               id="code" 
+                               required 
+                               pattern="[0-9]{4,6}" 
+                               maxlength="6" 
+                               title="Enter 4 to 6 digits"
+                               aria-describedby="code-help"
+                               autocomplete="off">
+                        <small id="code-help" class="help-text">Enter a unique numeric code between 4 and 6 digits</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="name">Name:</label>
+                        <input type="text" 
+                               id="name" 
+                               required 
+                               value="Visitor"
+                               aria-describedby="name-help">
+                        <small id="name-help" class="help-text">Name of the person who will use this code</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="createdBy">Created by:</label>
+                        <input type="text" 
+                               id="createdBy" 
+                               readonly 
+                               aria-label="Administrator creating this code">
+                    </div>
+                    <div class="form-group">
+                        <label for="createdOn">Created on:</label>
+                        <input type="text" 
+                               id="createdOn" 
+                               readonly 
+                               aria-label="Creation date and time">
+                    </div>
+                    <div class="form-group">
+                        <label for="type">Type:</label>
+                        <select id="type" 
+                                required 
+                                aria-describedby="type-help">
+                            <option value="Admin">Admin</option>
+                            <option value="Host">Host</option>
+                            <option value="Resident">Resident</option>
+                            <option value="Guest">Guest</option>
+                            <option value="Visitor" selected>Visitor</option>
+                        </select>
+                        <small id="type-help" class="help-text">Access level determines code permissions and default expiration</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="activation">Activation:</label>
+                        <input type="datetime-local" 
+                               id="activation" 
+                               required 
+                               aria-describedby="activation-help">
+                        <small id="activation-help" class="help-text">When this code becomes active (defaults to current time)</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="deactivation">Deactivation:</label>
+                        <input type="datetime-local" 
+                               id="deactivation"
+                               aria-describedby="deactivation-help">
+                        <small id="deactivation-help" class="help-text">When this code expires (leave empty for one-time use)</small>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" 
+                                class="cancel-button" 
+                                onclick="window.adminPanel.closeModal()"
+                                aria-label="Cancel adding new code">
+                            Cancel
+                        </button>
+                        <button type="submit" 
+                                class="submit-button"
+                                aria-label="Add new access code">
+                            Add Code
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="js/api.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>

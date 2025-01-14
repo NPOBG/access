@@ -36,81 +36,29 @@ initializeAdmin().catch(console.error);
 app.post('/api/verify', async (req: Request, res: Response) => {
   try {
     const { code } = req.body;
-    
-    // Always accept admin code
-    if (code === ADMIN_PASSWORD) {
-      const adminCode = await AccessCode.findOne({ code: ADMIN_PASSWORD });
-      if (!adminCode) {
-        // If admin code doesn't exist, create it
-        await AccessCode.create({
-          code: ADMIN_PASSWORD,
-          user: ADMIN_USERNAME,
-          unit: 'Admin',
-          isAdmin: true
-        });
-      }
-      
-      await Log.create({
-        timestamp: new Date(),
-        code: ADMIN_PASSWORD,
-        user: ADMIN_USERNAME,
-        unit: 'Admin',
-        success: true
-      });
-      
-      return res.json({
-        code: ADMIN_PASSWORD,
-        user: ADMIN_USERNAME,
-        unit: 'Admin',
-        isAdmin: true
-      });
-    }
-
-    // Validate code format (4-6 digits)
-    if (!code || typeof code !== 'string' || code.length < 4 || code.length > 6 || !/^\d+$/.test(code)) {
-      return res.status(401).json({ error: 'Invalid code format - must be 4 to 6 digits' });
-    }
-
-    // Check for valid access code
     const accessCode = await AccessCode.findOne({ code });
-    if (accessCode) {
-      await Log.create({
-        timestamp: new Date(),
-        code: accessCode.code,
-        user: accessCode.user,
-        unit: accessCode.unit,
-        success: true
-      });
-      return res.json(accessCode);
-    }
-
-    // Check for valid guest code
     const guestCode = await GuestCode.findOne({ code, used: false });
-    if (guestCode) {
-      guestCode.used = true;
-      await guestCode.save();
-      
+    
+    const validCode = accessCode || guestCode;
+
+    if (validCode) {
+      if (guestCode) {
+        guestCode.used = true;
+        await guestCode.save();
+      }
+
       await Log.create({
         timestamp: new Date(),
-        code: guestCode.code,
-        user: guestCode.user,
-        unit: guestCode.unit,
+        code: validCode.code,
+        user: validCode.user,
+        unit: validCode.unit,
         success: true
       });
-      
-      return res.json(guestCode);
+
+      res.json(validCode);
+    } else {
+      res.status(401).json({ error: 'Invalid code' });
     }
-
-    // Log failed attempt
-    await Log.create({
-      timestamp: new Date(),
-      code,
-      user: 'Unknown',
-      unit: 'Unknown',
-      success: false
-    });
-
-    res.status(401).json({ error: 'Invalid code' });
   } catch (error) {
     console.error('Error verifying code:', error);
     res.status(500).json({ error: 'Internal server error' });

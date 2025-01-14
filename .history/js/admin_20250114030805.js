@@ -509,17 +509,119 @@ class AdminPanel {
 
 // Initialize admin panel when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        const code = prompt("Enter admin code:");
-        if (code === "1234") {
-            window.adminPanel = new AdminPanel();
-        } else {
-            alert("Access denied");
+    console.log('DOM fully loaded and parsed');
+    
+    // Check user access based on type
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromKeypad = urlParams.get('fromKeypad');
+    
+    // Check for valid admin session
+    const sessionData = sessionStorage.getItem('adminSession');
+    let currentUser = 'Guest';
+    let isAdmin = false;
+    
+    if (sessionData) {
+        try {
+            const session = JSON.parse(sessionData);
+            const now = new Date().getTime();
+            
+            if (now < session.expires && session.type === 'Admin') {
+                currentUser = session.code;
+                isAdmin = true;
+                sessionStorage.setItem('userType', 'Admin');
+            } else {
+                // Clear expired or invalid session
+                sessionStorage.removeItem('adminSession');
+                throw new Error('Session expired or invalid');
+            }
+        } catch (error) {
+            console.error('Session validation error:', error);
+            alert('Session expired. Please log in again.');
             window.location.href = 'index.html';
+            return;
         }
-    } catch (error) {
-        console.error('Admin panel initialization error:', error);
-        alert('Failed to initialize admin panel. Please try again.');
+    } else {
+        alert('No active session found. Please log in.');
         window.location.href = 'index.html';
+        return;
     }
+    
+    if (!fromKeypad) {
+        try {
+            const codes = await window.doorAPI.getAccessCodes();
+            console.log('Available codes:', codes); // Debug logging
+            
+            let userCode = codes.find(code => code.code === currentUser && code.isAdmin);
+            
+            if (!userCode) {
+                // Check if we have an admin code
+                const adminCode = codes.find(code => 
+                    code.code === currentUser && 
+                    code.isAdmin && 
+                    code.isActive
+                );
+                
+                if (adminCode) {
+                    console.log('Admin code found:', adminCode);
+                    userCode = {
+                        user: adminCode.code,
+                        type: 'Admin',
+                        isAdmin: true
+                    };
+                    // Store admin session with expiration
+                    const sessionData = {
+                        code: adminCode.code,
+                        type: 'Admin',
+                        timestamp: new Date().getTime(),
+                        expires: new Date().getTime() + (8 * 60 * 60 * 1000) // 8 hours
+                    };
+                    sessionStorage.setItem('adminSession', JSON.stringify(sessionData));
+                    sessionStorage.setItem('adminUser', adminCode.code);
+                    sessionStorage.setItem('adminCode', adminCode.code);
+                    sessionStorage.setItem('userType', 'Admin');
+                }
+            }
+            
+            if (!userCode) {
+                console.error('No valid access code found for:', currentUser);
+                alert('Access denied. No valid access code found for current user.');
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            // Check permissions based on type
+            switch(userCode.type) {
+                case 'Guest':
+                    alert('Access denied. Guests cannot access admin panel.');
+                    window.location.href = 'index.html';
+                    return;
+                    
+                case 'Resident':
+                    // Residents can only manage their own codes and view their logs
+                    document.getElementById('addCodeBtn').style.display = 'none';
+                    break;
+                    
+                case 'Host':
+                    // Hosts can manage their residents and guests
+                    break;
+                    
+                case 'Admin':
+                    // Admins have full access
+                    break;
+                    
+                default:
+                    alert('Access denied. Invalid user type.');
+                    window.location.href = 'index.html';
+                    return;
+            }
+        } catch (error) {
+            console.error('Error checking access:', error);
+            alert('Error checking access. Please try again.');
+            return;
+        }
+    }
+
+    console.log('Initializing AdminPanel...');
+    window.adminPanel = new AdminPanel();
+    console.log('AdminPanel initialized:', window.adminPanel);
 });

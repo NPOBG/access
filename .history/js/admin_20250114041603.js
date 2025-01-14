@@ -510,13 +510,24 @@ class AdminPanel {
 // Initialize admin panel when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        const code = prompt("Enter admin code:");
-        if (code === "1234") {
-            window.adminPanel = new AdminPanel();
-        } else {
-            alert("Access denied");
+        const codes = await window.doorAPI.getAccessCodes();
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        
+        // Check if code exists and is an admin code
+        const adminCode = codes.find(c => 
+            c.code === code && 
+            c.isAdmin && 
+            c.isActive
+        );
+        
+        if (!adminCode) {
+            alert('Invalid admin code');
             window.location.href = 'index.html';
+            return;
         }
+
+        window.adminPanel = new AdminPanel();
     } catch (error) {
         console.error('Admin panel initialization error:', error);
         alert('Failed to initialize admin panel. Please try again.');

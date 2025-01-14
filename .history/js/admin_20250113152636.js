@@ -1,49 +1,13 @@
 class AdminPanel {
     constructor() {
-        // UI Elements
         this.modal = document.getElementById('addCodeModal');
         this.addCodeForm = document.getElementById('addCodeForm');
         this.addCodeBtn = document.getElementById('addCodeBtn');
         this.codesList = document.getElementById('codesList');
         this.logsList = document.getElementById('logsList');
-        
-        // Status regions
-        this.statusMessages = document.getElementById('statusMessages');
-        this.loadingIndicator = document.getElementById('loadingIndicator');
-        this.codesStatus = document.getElementById('codesStatus');
-        this.logsStatus = document.getElementById('logsStatus');
-        
-        // Container references
-        this.codesContainer = this.codesList.parentElement;
-        this.logsContainer = this.logsList.parentElement;
 
         this.setupEventListeners();
         this.refreshData();
-    }
-
-    // Status message handling
-    showStatus(message, type = 'info', duration = 3000) {
-        const statusDiv = document.createElement('div');
-        statusDiv.className = `status-message ${type}`;
-        statusDiv.textContent = message;
-        this.statusMessages.appendChild(statusDiv);
-
-        setTimeout(() => {
-            statusDiv.remove();
-        }, duration);
-    }
-
-    // Loading state handling
-    setLoading(element, message) {
-        element.classList.add('loading');
-        const status = element === this.codesContainer ? this.codesStatus : this.logsStatus;
-        status.textContent = message;
-    }
-
-    clearLoading(element) {
-        element.classList.remove('loading');
-        const status = element === this.codesContainer ? this.codesStatus : this.logsStatus;
-        status.textContent = '';
     }
 
     setupEventListeners() {
@@ -66,10 +30,8 @@ class AdminPanel {
                 this.displayAccessCodes(),
                 this.displayLogs()
             ]);
-            this.showStatus('Data refreshed successfully', 'success', 2000);
         } catch (error) {
             console.error('Error refreshing data:', error);
-            this.showStatus('Failed to refresh data', 'error');
         }
     }
 
@@ -83,35 +45,35 @@ class AdminPanel {
         const [hours, minutes] = defaultTime.split(':');
         activationDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
         
-        // Format for datetime-local input in user's timezone
+        // Format for datetime-local input
         const formatDateTime = (date) => {
-            const offset = date.getTimezoneOffset() * 60000;
-            const localDate = new Date(date.getTime() - offset);
-            return localDate.toISOString().slice(0, 16); // Format: YYYY-MM-DDThh:mm
+            return date.toISOString().slice(0, 16); // Format: YYYY-MM-DDThh:mm
         };
 
         // Set form defaults
         document.getElementById('createdBy').value = sessionStorage.getItem('adminUser') || 'Admin';
         document.getElementById('createdOn').value = now.toLocaleString();
         document.getElementById('activation').value = formatDateTime(activationDate);
-        document.getElementById('name').value = 'Guest';
         
-        // Remove Visitor option from dropdown
-        const typeSelect = document.getElementById('type');
-        const visitorOption = Array.from(typeSelect.options).find(opt => opt.value === 'Visitor');
-        if (visitorOption) {
-            typeSelect.removeChild(visitorOption);
-        }
-        
-        // Set deactivation to tomorrow at 12:00
+        // Set deactivation based on type
         const setDeactivationDate = () => {
+            const type = document.getElementById('type').value;
             const activationValue = document.getElementById('activation').value;
             const activationDate = new Date(activationValue);
             
-            const deactivationDate = new Date(activationDate);
-            deactivationDate.setDate(deactivationDate.getDate() + 1);
-            deactivationDate.setHours(12, 0, 0, 0);
-            document.getElementById('deactivation').value = formatDateTime(deactivationDate);
+            if (type === 'Guest') {
+                // For guests: next day at 12:00
+                const deactivationDate = new Date(activationDate);
+                deactivationDate.setDate(deactivationDate.getDate() + 1);
+                deactivationDate.setHours(12, 0, 0, 0);
+                document.getElementById('deactivation').value = formatDateTime(deactivationDate);
+            } else if (['Admin', 'Host', 'Resident'].includes(type)) {
+                // For admin/host/resident: no default deactivation
+                document.getElementById('deactivation').value = '';
+            } else {
+                // For visitors: same as activation (one-time use)
+                document.getElementById('deactivation').value = document.getElementById('activation').value;
+            }
         };
 
         // Set initial deactivation
@@ -123,8 +85,6 @@ class AdminPanel {
         // Add listener for activation changes
         document.getElementById('activation').addEventListener('change', setDeactivationDate);
 
-        // Show required fields message
-        this.showStatus('Required fields: Code (4-6 digits), Name, Type, Activation Date', 'info', 5000);
         this.modal.classList.add('active');
     }
 
@@ -154,25 +114,24 @@ class AdminPanel {
 
             // Validate code format
             if (!/^\d{4,6}$/.test(code)) {
-                this.showError('Code must be 4-6 digits', true);
+                this.showError('Code must be 4-6 digits');
                 return;
             }
 
             // Validate dates
             if (deactivation && deactivation <= activation) {
-                this.showError('Deactivation date must be after activation date', true);
+                this.showError('Deactivation date must be after activation date');
                 return;
             }
 
             // Add loading state
             form.classList.add('form-loading');
             submitButton.textContent = 'Adding...';
-            this.loadingIndicator.textContent = 'Adding new access code...';
 
             // Check if code exists
             const existingCodes = await window.doorAPI.getAccessCodes();
             if (existingCodes.some(c => c.code === code)) {
-                this.showError('This code already exists', true);
+                this.showError('This code already exists');
                 return;
             }
 
@@ -184,13 +143,14 @@ class AdminPanel {
                 activation: activation.toISOString(),
                 deactivation: deactivation ? deactivation.toISOString() : null,
                 createdBy,
-                createdOn: createdOn.toISOString(),
-                isAdmin: type === 'Admin',
-                isActive: true
+                createdOn: createdOn.toISOString()
             });
 
             // Show success message
-            this.showStatus('Access code added successfully', 'success');
+            const successMessage = document.createElement('div');
+            successMessage.className = 'success-message slide-up';
+            successMessage.textContent = 'Code added successfully!';
+            form.insertBefore(successMessage, form.firstChild);
 
             // Close modal after delay
             setTimeout(() => {
@@ -200,77 +160,38 @@ class AdminPanel {
 
         } catch (error) {
             console.error('Error adding code:', error);
-            this.showError('Failed to add code. Please try again.', true);
+            this.showError('Failed to add code. Please try again.');
         } finally {
             // Remove loading state
             form.classList.remove('form-loading');
             submitButton.textContent = originalButtonText;
-            this.loadingIndicator.textContent = '';
         }
     }
 
-    showError(message, isForm = false) {
-        // Show in status region
-        this.showStatus(message, 'error');
-        
-        // Show in form if needed
-        if (isForm) {
-            const form = document.getElementById('addCodeForm');
-            const existingError = form.querySelector('.error');
-            if (existingError) {
-                existingError.remove();
-            }
-
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'error slide-up';
-            errorDiv.textContent = message;
-            form.insertBefore(errorDiv, form.firstChild);
-
-            setTimeout(() => {
-                errorDiv.remove();
-            }, 3000);
+    showError(message) {
+        const form = document.getElementById('addCodeForm');
+        const existingError = form.querySelector('.error');
+        if (existingError) {
+            existingError.remove();
         }
+
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error slide-up';
+        errorDiv.textContent = message;
+        form.insertBefore(errorDiv, form.firstChild);
+
+        // Remove error after 3 seconds
+        setTimeout(() => {
+            errorDiv.remove();
+        }, 3000);
     }
 
     async displayAccessCodes() {
-        this.setLoading(this.codesContainer, 'Loading access codes...');
+        // Add loading state
+        this.codesList.innerHTML = '<div class="loading"></div>';
         
         try {
-            const allCodes = await window.doorAPI.getAccessCodes();
-            const currentUser = sessionStorage.getItem('adminUser') || 'Guest';
-            
-            // Filter codes based on user type
-            const userCode = allCodes.find(code => code.user === currentUser);
-            let codes = [];
-            
-            if (userCode) {
-                switch(userCode.type) {
-                    case 'Resident':
-                        // Residents can see their own codes and their guests
-                        codes = allCodes.filter(code => 
-                            code.createdBy === currentUser || 
-                            code.type === 'Guest'
-                        );
-                        break;
-                        
-                    case 'Host':
-                        // Hosts can see their own codes, their residents, and guests
-                        codes = allCodes.filter(code => 
-                            code.createdBy === currentUser ||
-                            code.type === 'Resident' ||
-                            code.type === 'Guest'
-                        );
-                        break;
-                        
-                    case 'Admin':
-                        // Admins see all codes
-                        codes = allCodes;
-                        break;
-                        
-                    default:
-                        codes = [];
-                }
-            }
+            const codes = await window.doorAPI.getAccessCodes();
             
             if (codes.length === 0) {
                 this.codesList.innerHTML = `
@@ -313,10 +234,7 @@ class AdminPanel {
             }).join('');
         } catch (error) {
             console.error('Error displaying codes:', error);
-            this.showError('Failed to load access codes');
             this.codesList.innerHTML = '<div class="error">Failed to load access codes</div>';
-        } finally {
-            this.clearLoading(this.codesContainer);
         }
     }
 
@@ -403,18 +321,14 @@ class AdminPanel {
                 return;
             }
 
-            // Add loading state
+            // Add loading state to the code item
             const codeItem = document.querySelector(`[data-code="${code}"]`);
             if (codeItem) {
                 codeItem.classList.add('deleting');
             }
-            this.loadingIndicator.textContent = 'Deleting access code...';
 
             // Delete the code
             await window.doorAPI.removeAccessCode(code);
-            
-            // Show success message
-            this.showStatus('Access code deleted successfully', 'success');
             
             // Refresh the list
             await this.displayAccessCodes();
@@ -422,57 +336,15 @@ class AdminPanel {
         } catch (error) {
             console.error('Error deleting code:', error);
             this.showError('Failed to delete code. Please try again.');
-        } finally {
-            this.loadingIndicator.textContent = '';
         }
     }
 
     async displayLogs() {
-        this.setLoading(this.logsContainer, 'Loading access logs...');
+        // Add loading state
+        this.logsList.innerHTML = '<div class="loading"></div>';
         
         try {
-            const allLogs = await window.doorAPI.getLogs();
-            const currentUser = sessionStorage.getItem('adminUser') || 'Guest';
-            
-            // Filter logs based on user type
-            const userCode = await window.doorAPI.getAccessCodes()
-                .then(codes => codes.find(code => code.user === currentUser));
-                
-            let logs = [];
-            
-            if (userCode) {
-                switch(userCode.type) {
-                    case 'Resident':
-                        // Residents can see their own logs and their guests
-                        logs = allLogs.filter(log => 
-                            log.user === currentUser ||
-                            allLogs.some(code => 
-                                code.user === log.user && 
-                                code.createdBy === currentUser
-                            )
-                        );
-                        break;
-                        
-                    case 'Host':
-                        // Hosts can see their own logs, their residents, and guests
-                        logs = allLogs.filter(log => 
-                            log.user === currentUser ||
-                            allLogs.some(code => 
-                                (code.type === 'Resident' || code.type === 'Guest') &&
-                                code.createdBy === currentUser
-                            )
-                        );
-                        break;
-                        
-                    case 'Admin':
-                        // Admins see all logs
-                        logs = allLogs;
-                        break;
-                        
-                    default:
-                        logs = [];
-                }
-            }
+            const logs = await window.doorAPI.getLogs();
             
             if (logs.length === 0) {
                 this.logsList.innerHTML = `
@@ -499,27 +371,37 @@ class AdminPanel {
             `).join('');
         } catch (error) {
             console.error('Error displaying logs:', error);
-            this.showError('Failed to load access logs');
             this.logsList.innerHTML = '<div class="error">Failed to load access logs</div>';
-        } finally {
-            this.clearLoading(this.logsContainer);
         }
     }
 }
 
 // Initialize admin panel when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        const code = prompt("Enter admin code:");
-        if (code === "1234") {
-            window.adminPanel = new AdminPanel();
-        } else {
-            alert("Access denied");
-            window.location.href = 'index.html';
+    console.log('DOM fully loaded and parsed');
+    
+    // Check if user has admin access
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromKeypad = urlParams.get('fromKeypad');
+    
+    if (!fromKeypad) {
+        try {
+            const codes = await window.doorAPI.getAccessCodes();
+            const hasAdminCode = codes.some(code => code.isAdmin);
+            
+            if (!hasAdminCode) {
+                alert('Access denied. Please use admin code at keypad.');
+                window.location.href = 'index.html';
+                return;
+            }
+        } catch (error) {
+            console.error('Error checking admin access:', error);
+            alert('Error checking admin access. Please try again.');
+            return;
         }
-    } catch (error) {
-        console.error('Admin panel initialization error:', error);
-        alert('Failed to initialize admin panel. Please try again.');
-        window.location.href = 'index.html';
     }
+
+    console.log('Initializing AdminPanel...');
+    window.adminPanel = new AdminPanel();
+    console.log('AdminPanel initialized:', window.adminPanel);
 });

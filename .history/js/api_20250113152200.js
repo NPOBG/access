@@ -6,22 +6,12 @@ class DoorAPI {
 
     // Helper method for API calls
     async fetchAPI(endpoint, options = {}) {
-        const headers = {
-            'Content-Type': 'application/json',
-            ...options.headers
-        };
-        
-        // Add admin session token if available
-        const adminSession = sessionStorage.getItem('adminSession');
-        if (adminSession) {
-            const sessionData = JSON.parse(adminSession);
-            headers['X-Admin-Session'] = sessionData.code;
-            headers['X-Admin-Timestamp'] = sessionData.timestamp;
-        }
-
         const response = await fetch(`${this.apiBaseUrl}/api/${endpoint}`, {
             ...options,
-            headers
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
         });
 
         if (!response.ok) {
@@ -34,30 +24,12 @@ class DoorAPI {
     // Verify access code
     async verifyCode(code) {
         try {
-            // Get current session data
-            const session = JSON.parse(sessionStorage.getItem('currentSession') || '{}');
-            
             const result = await this.fetchAPI('verify', {
                 method: 'POST',
-                body: JSON.stringify({ code }),
-                headers: {
-                    'X-Session-Id': session.id || '',
-                    'X-Session-Timestamp': session.timestamp || Date.now()
-                }
+                body: JSON.stringify({ code })
             });
-            
-            // Update session storage with new session data
-            if (result.session) {
-                sessionStorage.setItem('currentSession', JSON.stringify(result.session));
-            }
-            
             return result;
         } catch (error) {
-            if (error.message.includes('401')) {
-                console.error('Authentication failed - please try again');
-                sessionStorage.removeItem('currentSession');
-                throw new Error('Authentication failed');
-            }
             console.error('Verification error:', error);
             throw error;
         }

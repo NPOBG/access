@@ -215,18 +215,17 @@ class Keypad {
                 try {
                     const verified = await window.doorAPI.verifyCode(this.currentCode);
                     if (verified && verified.isAdmin) {
-                        // Store admin session with expiration and additional validation data
+                        // Store admin session with expiration
                         const sessionData = {
                             code: this.currentCode,
-                            user: verified.user || 'Admin',
                             timestamp: new Date().getTime(),
                             expires: new Date().getTime() + (8 * 60 * 60 * 1000), // 8 hours
                             type: 'Admin',
-                            isAdmin: true
+                            isAdmin: true,
+                            user: 'Admin',
+                            permissions: ['manage_codes', 'view_logs']
                         };
                         sessionStorage.setItem('adminSession', JSON.stringify(sessionData));
-                        sessionStorage.setItem('adminUser', sessionData.user);
-                        sessionStorage.setItem('adminCode', sessionData.code);
                         
                         this.showStatus('Access granted', 'success');
                         this.provideSuccessFeedback();

@@ -150,6 +150,10 @@ h1 {
     color: white;
 }
 
+.code-type.visitor {
+    background: #9933CC;
+    color: white;
+}
 
 .code-info {
     font-size: 0.9rem;
@@ -198,22 +202,10 @@ select {
     border-radius: var(--border-radius);
     border: 1px solid rgba(255, 255, 255, 0.1);
     background: rgba(255, 255, 255, 0.05);
-    color: var(--text-color); /* Match other form fields */
+    color: var(--text-color);
     font-size: 1rem;
     transition: all 0.3s ease;
     cursor: pointer;
-}
-
-/* Style for dropdown options */
-select option {
-    color: #333; /* Keep original color for options */
-    background: white;
-}
-
-/* Style for selected option */
-select option:checked {
-    color: var(--text-color);
-    background: rgba(255, 255, 255, 0.1);
 }
 
 select:focus {
@@ -474,31 +466,9 @@ select:focus {
     position: sticky;
     bottom: 0;
     background: var(--surface-color);
-    padding: 15px 0;
+    padding: 15px 0 0;
     margin-top: 15px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
-    z-index: 10;
-}
-
-/* Ensure space for fixed footer */
-.form-grid {
-    padding-bottom: 70px;
-}
-
-/* Improve button touch targets */
-.form-actions button {
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 500;
-}
-
-/* Add visual feedback for button press */
-.form-actions button:active {
-    transform: translateY(1px);
-    opacity: 0.9;
 }
 
 label {
