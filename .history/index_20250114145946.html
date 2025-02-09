@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#1a1a1a">
+    <title>Building Access Control</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Door Access</h1>
+            <div class="time" id="currentTime"></div>
+        </header>
+        
+        <div class="keypad-container">
+            <div class="display" id="display">
+                <span class="display-text" id="displayText">Enter Access Code</span>
+                <div class="display-dots"></div>
+            </div>
+            
+            <div class="keypad">
+                <button class="key" data-key="1">1</button>
+                <button class="key" data-key="2">2</button>
+                <button class="key" data-key="3">3</button>
+                <button class="key" data-key="4">4</button>
+                <button class="key" data-key="5">5</button>
+                <button class="key" data-key="6">6</button>
+                <button class="key" data-key="7">7</button>
+                <button class="key" data-key="8">8</button>
+                <button class="key" data-key="9">9</button>
+                <button class="key clear" data-key="clear">⌫</button>
+                <button class="key" data-key="0">0</button>
+                <button class="key enter" data-key="enter">✓</button>
+            </div>
+        </div>
+
+        <div id="status" class="status"></div>
+    </div>
+
+    <!-- Admin Access -->
+    <div class="admin-access">
+        <button id="adminButton" class="admin-button">
+            Access Admin Panel
+        </button>
+    </div>
+
+    <!-- Guest Code Generator -->
+    <div class="guest-access">
+        <button id="guestButton" class="guest-button">
+            Generate Guest Code
+        </button>
+    </div>
+
+    <!-- Guest Code Display Modal -->
+    <div id="guestCodeModal" class="modal">
+        <div class="modal-content">
+            <h2>Guest Access Code</h2>
+            <div class="guest-code-display">
+                <div class="code" id="guestCode"></div>
+                <p class="code-info">This code can be used once for guest access</p>
+            </div>
+            <div class="modal-actions">
+                <button class="copy-button" id="copyCode">Copy Code</button>
+                <button class="close-button" id="closeGuestModal">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/keypad.js"></script>
+    <script>
+        // Update time display
+        function updateTime() {
+            const timeElement = document.getElementById('currentTime');
+            const now = new Date();
+            timeElement.textContent = now.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+        }
+        
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // Admin mode handling
+        const adminButton = document.getElementById('adminButton');
+        adminButton.addEventListener('click', () => {
+            window.keypad.setAdminMode(true);
+        });
+
+        // Guest code handling
+        const guestButton = document.getElementById('guestButton');
+        const guestCodeModal = document.getElementById('guestCodeModal');
+        const closeGuestModal = document.getElementById('closeGuestModal');
+        const copyCode = document.getElementById('copyCode');
+
+        guestButton.addEventListener('click', () => {
+            window.keypad.setGuestMode(true);
+        });
+
+        closeGuestModal.addEventListener('click', () => {
+            guestCodeModal.classList.remove('active');
+        });
+
+        copyCode.addEventListener('click', async () => {
+            const codeElement = document.getElementById('guestCode');
+            try {
+                await navigator.clipboard.writeText(codeElement.textContent);
+                copyCode.textContent = 'Copied!';
+                setTimeout(() => {
+                    copyCode.textContent = 'Copy Code';
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy code:', err);
+            }
+        });
+
+        // Keep screen awake
+        async function keepScreenAwake() {
+            try {
+                if ('wakeLock' in navigator) {
+                    const wakeLock = await navigator.wakeLock.request('screen');
+                }
+            } catch (err) {
+                console.log('Wake Lock error:', err);
+            }
+        }
+        keepScreenAwake();
+    </script>
+</body>
+</html>

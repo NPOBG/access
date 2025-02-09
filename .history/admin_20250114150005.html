@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+    <title>Door Access - Admin Panel</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/admin.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <script>
+        // Security check - prevent direct URL access
+        function checkAdminAccess() {
+            const adminSession = sessionStorage.getItem('adminSession');
+            if (!adminSession) {
+                alert('Unauthorized access. Please use admin code at keypad.');
+                window.location.href = 'index.html';
+            }
+        }
+        checkAdminAccess();
+    </script>
+</head>
+<body>
+    <div class="admin-container" role="application" aria-label="Door Access Admin Panel">
+        <!-- Status messages region -->
+        <div id="statusMessages" 
+             role="status" 
+             aria-live="polite" 
+             class="visually-hidden">
+        </div>
+        
+        <!-- Loading indicator -->
+        <div id="loadingIndicator" 
+             role="status" 
+             aria-live="polite" 
+             class="visually-hidden">
+        </div>
+        <header role="banner">
+            <h1>Admin Panel</h1>
+            <nav role="navigation" aria-label="Main">
+                <a href="index.html" 
+                   class="back-link" 
+                   onclick="sessionStorage.removeItem('adminSession')"
+                   aria-label="Return to keypad">
+                    Back to Keypad
+                </a>
+            </nav>
+        </header>
+
+        <main class="admin-content" role="main">
+            <section class="section" aria-labelledby="codes-heading">
+                <h2 id="codes-heading">Access Codes</h2>
+                <button id="addCodeBtn" 
+                        class="action-button"
+                        aria-haspopup="dialog"
+                        aria-controls="addCodeModal">
+                    Add New Code
+                </button>
+                <div class="codes-list-container">
+                    <div id="codesStatus" 
+                         role="status" 
+                         aria-live="polite" 
+                         class="visually-hidden">
+                    </div>
+                    <div class="codes-list" 
+                         id="codesList"
+                         role="list"
+                         aria-label="List of access codes">
+                        <!-- Codes will be populated here -->
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" aria-labelledby="logs-heading">
+                <h2 id="logs-heading">Access Logs</h2>
+                <div class="logs-list-container">
+                    <div id="logsStatus" 
+                         role="status" 
+                         aria-live="polite" 
+                         class="visually-hidden">
+                    </div>
+                    <div class="logs-list" 
+                         id="logsList"
+                         role="list"
+                         aria-label="Access history logs">
+                        <!-- Logs will be populated here -->
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Add Code Modal -->
+        <div id="addCodeModal" 
+             class="modal" 
+             role="dialog"
+             aria-modal="true"
+             aria-hidden="true"
+             aria-labelledby="modal-title">
+            <div class="modal-content">
+                <h2 id="modal-title">Add New Access Code</h2>
+                <form id="addCodeForm" role="form" aria-labelledby="modal-title">
+                    <div class="form-grid">
+                        <!-- Code and Name in first row -->
+                        <div class="form-group">
+                            <label for="code">Code (4-6 digits):</label>
+                            <input type="text" 
+                                   id="code" 
+                                   required 
+                                   pattern="[0-9]{4,6}" 
+                                   maxlength="6" 
+                                   title="Enter 4 to 6 digits"
+                                   aria-describedby="code-help"
+                                   autocomplete="off">
+                            <small id="code-help" class="help-text">Enter 4-6 digit code</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="name">Name:</label>
+                            <input type="text" 
+                                   id="name" 
+                                   required 
+                                   value="Guest"
+                                   aria-describedby="name-help">
+                            <small id="name-help" class="help-text">Code owner's name</small>
+                        </div>
+
+                        <!-- Type in second row -->
+                        <div class="form-group full-width">
+                            <label for="type">Type:</label>
+                            <select id="type" 
+                                    required 
+                                    aria-describedby="type-help">
+                                <option value="Admin">Admin</option>
+                                <option value="Host">Host</option>
+                                <option value="Resident">Resident</option>
+                                <option value="Guest" selected>Guest</option>
+                            </select>
+                            <small id="type-help" class="help-text">Access level and expiration rules</small>
+                        </div>
+
+                        <!-- Dates in third row -->
+                        <div class="form-group">
+                            <label for="activation">Activation:</label>
+                            <input type="datetime-local" 
+                                   id="activation" 
+                                   required 
+                                   aria-describedby="activation-help">
+                            <small id="activation-help" class="help-text">When code becomes active</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="deactivation">Deactivation:</label>
+                            <input type="datetime-local" 
+                                   id="deactivation"
+                                   aria-describedby="deactivation-help">
+                            <small id="deactivation-help" class="help-text">When code expires</small>
+                        </div>
+
+                        <!-- Created info in fourth row -->
+                        <div class="form-group">
+                            <label for="createdBy">Created by:</label>
+                            <input type="text" 
+                                   id="createdBy" 
+                                   readonly 
+                                   aria-label="Administrator creating this code">
+                        </div>
+                        <div class="form-group">
+                            <label for="createdOn">Created on:</label>
+                            <input type="text" 
+                                   id="createdOn" 
+                                   readonly 
+                                   aria-label="Creation date and time">
+                        </div>
+                    </div>
+
+                    <!-- Fixed footer with actions -->
+                    <div class="form-actions">
+                        <button type="button" 
+                                class="cancel-button" 
+                                onclick="window.adminPanel.closeModal()"
+                                aria-label="Cancel adding new code">
+                            Cancel
+                        </button>
+                        <button type="submit" 
+                                class="submit-button"
+                                aria-label="Add new access code">
+                            Add Code
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="js/api.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>
